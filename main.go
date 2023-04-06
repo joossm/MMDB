@@ -11,13 +11,14 @@ func main() {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello World!"))
 	})
-
-	// Test
 	// create a new http server
 	server := &http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
 	// start the server as a goroutine
-	server.ListenAndServe()
+	err := server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
 }
