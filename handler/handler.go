@@ -18,15 +18,15 @@ func InitDatabase(responseWriter http.ResponseWriter, request *http.Request) {
 		// create shema if not exists
 		//_ = runQuery("CREATE SCHEMA IF NOT EXISTS mmdb", "createTable")
 		// create table if not exists for images with id, name, image
-		_ = runQuery("CREATE TABLE IF NOT EXISTS images (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), image MEDIUMBLOB)", "createTable")
+		_ = runQuery("CREATE TABLE IF NOT EXISTS image (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), image MEDIUMBLOB)", "createTable")
 		// create table if not exists for user with id, username, password
-		_ = runQuery("CREATE TABLE `users` ( `idusers` INT NOT NULL, `username` VARCHAR(45) NULL, `password` VARCHAR(45) NULL, PRIMARY KEY (`idusers`));", "createTable")
-		// create table if not exists for generes with id, name
-		_ = runQuery("CREATE TABLE IF NOT EXISTS generes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255))", "createTable")
-		// create table if not exists for combine of images and generes with id, image_id, genre_id
-		_ = runQuery("CREATE TABLE IF NOT EXISTS images_generes (id INT AUTO_INCREMENT PRIMARY KEY, image_id INT, genre_id INT)", "createTable")
+		_ = runQuery("CREATE TABLE `user` ( `idusers` INT NOT NULL, `username` VARCHAR(45) NULL, `password` VARCHAR(45) NULL, PRIMARY KEY (`idusers`));", "createTable")
+		// create table if not exists for genres with id, name
+		_ = runQuery("CREATE TABLE IF NOT EXISTS genre (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255))", "createTable")
+		// create table if not exists for combine of images and genres with id, image_id, genre_id
+		_ = runQuery("CREATE TABLE IF NOT EXISTS image_genre (id INT AUTO_INCREMENT PRIMARY KEY, image_id INT, genre_id INT)", "createTable")
 		// create table if not exists for combine of images and users with id, image_id, user_id
-		_ = runQuery("CREATE TABLE IF NOT EXISTS images_users (id INT AUTO_INCREMENT PRIMARY KEY, image_id INT, user_id INT)", "createTable")
+		_ = runQuery("CREATE TABLE IF NOT EXISTS image_user (id INT AUTO_INCREMENT PRIMARY KEY, image_id INT, user_id INT)", "createTable")
 
 		_, responseErr := responseWriter.Write([]byte("Database initialized"))
 		errorHandler(responseErr)
@@ -62,7 +62,7 @@ func runQuery(query string, function string, args ...interface{}) *sql.Rows {
 	return nil
 }
 
-func InsertMusik(w http.ResponseWriter, r *http.Request) {
+func InsertImage(w http.ResponseWriter, r *http.Request) {
 
 }
 func closeDB(db *sql.DB) {

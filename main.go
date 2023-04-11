@@ -21,5 +21,4 @@ func main() {
 		Handler:           handler,
 	}
 	log.Fatal(server.ListenAndServe())
-	print("Starting server on port 8080...")
 }
