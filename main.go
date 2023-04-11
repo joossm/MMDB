@@ -1,24 +1,25 @@
 package main
 
 import (
+	"MMDB/handler"
+	"github.com/rs/cors"
+	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
-	// create a new server mux
-	mux := http.NewServeMux()
-	// register the handler function
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello World!"))
-	})
-	// create a new http server
+	var serveMux = http.NewServeMux()
+	serveMux.HandleFunc("/initDatabase", handler.InitDatabase)
+	serveMux.HandleFunc("/", handler.HelloWorld)
+	handler := cors.Default().Handler(serveMux)
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
+		Addr:              ":8080",
+		ReadHeaderTimeout: 3 * time.Second,
+		WriteTimeout:      3 * time.Second,
+		IdleTimeout:       3 * time.Second,
+		Handler:           handler,
 	}
-	// start the server as a goroutine
-	err := server.ListenAndServe()
-	if err != nil {
-		panic(err)
-	}
+	log.Fatal(server.ListenAndServe())
+	print("Starting server on port 8080...")
 }

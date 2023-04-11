@@ -1,6 +1,6 @@
-FROM golang:1.20.3-alpine
-
-WORKDIR /SE_MIM22_WEBSHOP_MONO
+FROM golang:1.19-alpine
+# Workdir
+WORKDIR /MMDB
 
 COPY . .
 

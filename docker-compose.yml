@@ -2,28 +2,28 @@ version: '3.8'
 services:
   mysql:
     networks:
-      - bookstore
+      - mmdbnetwork
     extra_hosts:
       - "mysql:172.0.0.1"
     image: mysql:8.0
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: books
+      MYSQL_DATABASE: mmdb
       MYSQL_USER: admin
       MYSQL_PASSWORD: password
     ports:
       - "3306:3306"
 
-  imageTrader:
+  imagetrader:
     networks:
-      - bookstore
+      - mmdbnetwork
     build: ./
-    container_name: imageTrader
+    container_name: imagetrader
     working_dir: /MMDB
     ports:
       - "8080:8080"
 
 networks:
-  bookstore:
-    name: "bookstore"
+  mmdbnetwork:
+    name: "mmdbnetwork"
