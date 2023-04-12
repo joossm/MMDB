@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"MMDB/model"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -108,65 +109,115 @@ func DownloadImage(responseWriter http.ResponseWriter, request *http.Request) {
 func DeleteImage(responseWriter http.ResponseWriter, request *http.Request) {
 
 }
-func RegisterUser(responseWriter http.ResponseWriter, request *http.Request) {
-	// check request method
+func Register(responseWriter http.ResponseWriter, request *http.Request) {
 	switch request.Method {
-	case get:
-		// return register.html
+	case get: // GET
+		// return register.html site
 		http.ServeFile(responseWriter, request, "./view/register.html")
+
 	case post:
-		// get username and password from request
-		username := request.FormValue("username")
-		password := request.FormValue("password")
-		// check if username and password are not empty
-		if username != "" && password != "" {
-			// Check if username already exists
-			rows := runQuery("SELECT * FROM users WHERE username = ?", "select", username)
-			// if username does not exist
-			if !rows.Next() {
-				// register user
-				_ = runQuery("INSERT INTO users (username, password) VALUES (?, ?)", "insert", username, password)
-				// return success
-				js, err := json.Marshal("User registered")
+		fmt.Println("Register was executed")
+
+		user := model.User{}
+		user.Username = request.FormValue("name")
+		user.Password = request.FormValue("password")
+
+		db := openDB()
+		defer closeDB(db)
+		result, err := db.Query("SELECT Username FROM users WHERE Username = ?", user.Username)
+		fmt.Println("result: ", result)
+		errorHandler(err)
+		fmt.Println("Query executed")
+		var users []model.User
+		if result.Next() == true {
+			for result.Next() {
+				var user model.User
+				err = result.Scan(&user.Id, &user.Username, &user.Password)
+				fmt.Println("user: ", user.Username, user.Password)
+				users = append(users, user)
+			}
+			if users != nil {
+				js, err := json.Marshal("already exists")
 				errorHandler(err)
 				_, responseErr := responseWriter.Write(js)
 				errorHandler(responseErr)
+				return
 			}
+		} else {
+			// GET MAX ID
+			result, err := db.Query("SELECT MAX(idusers) FROM users")
+			errorHandler(err)
+			var maxId int
+			if result != nil {
+				for result.Next() {
+					err = result.Scan(&maxId)
+					errorHandler(err)
+				}
+			}
+			maxId++
+			fmt.Println("result is nil | execute insert")
+			res, err := db.Query("INSERT INTO users (idusers, Username, Password) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+				maxId, user.Username, user.Password)
+			fmt.Println(res)
+			errorHandler(err)
+			js, err := json.Marshal("true")
+			_, responseErr := responseWriter.Write(js)
+			errorHandler(responseErr)
+			return
 		}
+
+	default:
+		js, err := json.Marshal("THIS IS A POST REQUEST")
+		errorHandler(err)
+		_, responseErr := responseWriter.Write(js)
+		errorHandler(responseErr)
+		return
 	}
 }
-func LoginUser(responseWriter http.ResponseWriter, request *http.Request) {
-	// check request method
+
+func Login(responseWriter http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case get:
-		// return login.html
+		// display login.html
 		http.ServeFile(responseWriter, request, "./view/login.html")
 	case post:
-		// get username and password from request
-		username := request.FormValue("username")
-		password := request.FormValue("password")
-		// check if username and password are not empty
-		if username != "" && password != "" {
-			// Check if username and password are correct
-			rows := runQuery("SELECT * FROM users WHERE username = ? AND password = ?", "select", username, password)
-			// if correct
-			if rows.Next() {
-				// login user
-				// return success
-				js, err := json.Marshal("User logged in")
+		user := model.User{}
+		user.Username = request.FormValue("name")
+		user.Password = request.FormValue("password")
+
+		db := openDB()
+		defer closeDB(db)
+		result, err := db.Query("SELECT * FROM users WHERE Username = ? AND Password = ?", user.Username, user.Password)
+		errorHandler(err)
+		var users []model.User
+		if result != nil {
+			for result.Next() {
+				var user model.User
+				err = result.Scan(&user.Id, &user.Username, &user.Password)
 				errorHandler(err)
-				_, responseErr := responseWriter.Write(js)
-				errorHandler(responseErr)
-			} else {
-				// return error
-				js, err := json.Marshal("Username or password is incorrect")
-				errorHandler(err)
-				_, responseErr := responseWriter.Write(js)
-				errorHandler(responseErr)
+				users = append(users, user)
 			}
 		}
-	}
+		for _, iUser := range users {
+			fmt.Println(user.Username + " " + user.Password)
+			fmt.Println(iUser.Username + " " + iUser.Password)
+			if iUser.Username == user.Username && iUser.Password == user.Password {
+				js, err := json.Marshal(iUser)
+				errorHandler(err)
+				_, responseErr := responseWriter.Write(js)
+				errorHandler(responseErr)
+				return
+			}
+		}
+		return
+	default:
+		js, err := json.Marshal("THIS IS A POST REQUEST")
+		errorHandler(err)
+		_, responseErr := responseWriter.Write(js)
+		errorHandler(responseErr)
+		return
 
+	}
 }
 func closeDB(db *sql.DB) {
 	err := db.Close()
