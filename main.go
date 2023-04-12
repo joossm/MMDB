@@ -11,7 +11,9 @@ import (
 func main() {
 	var serveMux = http.NewServeMux()
 	serveMux.HandleFunc("/initDatabase", handler.InitDatabase)
-	serveMux.HandleFunc("/", handler.HelloWorld)
+	serveMux.HandleFunc("/register", handler.RegisterUser)
+	serveMux.HandleFunc("/login", handler.LoginUser)
+	serveMux.HandleFunc("/", handler.Index)
 	handler := cors.Default().Handler(serveMux)
 	server := &http.Server{
 		Addr:              ":8080",

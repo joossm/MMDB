@@ -48,7 +48,10 @@ func runQuery(query string, function string, args ...interface{}) *sql.Rows {
 		defer closeDB(db)
 		return nil
 	case "insert": // INSERT
-
+		_, err := db.Exec(query, args...)
+		errorHandler(err)
+		defer closeDB(db)
+		return nil
 	case "select": // SELECT
 		result, err := db.Query(query)
 		errorHandler(err)
@@ -62,7 +65,107 @@ func runQuery(query string, function string, args ...interface{}) *sql.Rows {
 	return nil
 }
 
-func InsertImage(w http.ResponseWriter, r *http.Request) {
+type Image struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Image []byte `json:"image"`
+}
+
+func Index(responseWriter http.ResponseWriter, request *http.Request) {
+	// Load images from database and display them on the index page
+	switch request.Method {
+	case get:
+		// get all images from database
+		rows := runQuery("SELECT * FROM images", "select")
+		// create array of images
+		var images []Image
+		// loop through all images
+		for rows.Next() {
+			// create image
+			var image Image
+			// scan image
+			err := rows.Scan(&image.ID, &image.Name, &image.Image)
+			errorHandler(err)
+			// append image to array
+			images = append(images, image)
+		}
+		// return images
+		js, err := json.Marshal(images)
+		errorHandler(err)
+		_, responseErr := responseWriter.Write(js)
+		errorHandler(responseErr)
+		return
+	}
+
+}
+
+func UploadImage(responseWriter http.ResponseWriter, request *http.Request) {
+
+}
+func DownloadImage(responseWriter http.ResponseWriter, request *http.Request) {
+
+}
+func DeleteImage(responseWriter http.ResponseWriter, request *http.Request) {
+
+}
+func RegisterUser(responseWriter http.ResponseWriter, request *http.Request) {
+	// check request method
+	switch request.Method {
+	case get:
+		// return register.html
+		http.ServeFile(responseWriter, request, "./view/register.html")
+	case post:
+		// get username and password from request
+		username := request.FormValue("username")
+		password := request.FormValue("password")
+		// check if username and password are not empty
+		if username != "" && password != "" {
+			// Check if username already exists
+			rows := runQuery("SELECT * FROM users WHERE username = ?", "select", username)
+			// if username does not exist
+			if !rows.Next() {
+				// register user
+				_ = runQuery("INSERT INTO users (username, password) VALUES (?, ?)", "insert", username, password)
+				// return success
+				js, err := json.Marshal("User registered")
+				errorHandler(err)
+				_, responseErr := responseWriter.Write(js)
+				errorHandler(responseErr)
+			}
+		}
+	}
+}
+func LoginUser(responseWriter http.ResponseWriter, request *http.Request) {
+	// check request method
+	switch request.Method {
+	case get:
+		// return login.html
+		http.ServeFile(responseWriter, request, "./view/login.html")
+	case post:
+		// get username and password from request
+		username := request.FormValue("username")
+		password := request.FormValue("password")
+		// check if username and password are not empty
+		if username != "" && password != "" {
+			// Check if username and password are correct
+			rows := runQuery("SELECT * FROM users WHERE username = ? AND password = ?", "select", username, password)
+			// if correct
+			if rows.Next() {
+				// login user
+				// return success
+				js, err := json.Marshal("User logged in")
+				errorHandler(err)
+				_, responseErr := responseWriter.Write(js)
+				errorHandler(responseErr)
+			} else {
+				// return error
+				js, err := json.Marshal("Username or password is incorrect")
+				errorHandler(err)
+				_, responseErr := responseWriter.Write(js)
+				errorHandler(responseErr)
+			}
+		}
+	}
 
 }
 func closeDB(db *sql.DB) {
