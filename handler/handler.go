@@ -16,12 +16,10 @@ func InitDatabase(responseWriter http.ResponseWriter, request *http.Request) {
 	case get:
 		// create mysql database if not exists
 		_ = runQuery("CREATE DATABASE IF NOT EXISTS mmdb", "createTable")
-		// create shema if not exists
-		//_ = runQuery("CREATE SCHEMA IF NOT EXISTS mmdb", "createTable")
 		// create table if not exists for images with id, name, image
 		_ = runQuery("CREATE TABLE IF NOT EXISTS image (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), image MEDIUMBLOB)", "createTable")
 		// create table if not exists for user with id, username, password
-		_ = runQuery("CREATE TABLE `user` ( `idusers` INT NOT NULL, `username` VARCHAR(45) NULL, `password` VARCHAR(45) NULL, PRIMARY KEY (`idusers`));", "createTable")
+		_ = runQuery("CREATE TABLE IF NOT EXISTS user (id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255))", "createTable")
 		// create table if not exists for genres with id, name
 		_ = runQuery("CREATE TABLE IF NOT EXISTS genre (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255))", "createTable")
 		// create table if not exists for combine of images and genres with id, image_id, genre_id
@@ -77,7 +75,7 @@ func Index(responseWriter http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case get:
 		// get all images from database
-		rows := runQuery("SELECT * FROM images", "select")
+		rows := runQuery("SELECT * FROM image", "select")
 		// create array of images
 		var images []Image
 		// loop through all images
@@ -101,7 +99,24 @@ func Index(responseWriter http.ResponseWriter, request *http.Request) {
 }
 
 func UploadImage(responseWriter http.ResponseWriter, request *http.Request) {
-
+	// request type switch
+	switch request.Method {
+	case get:
+		// return upload.html site
+		http.ServeFile(responseWriter, request, "./view/uploadImage.html")
+		return
+	case post:
+		// get image from request
+		image, _, err := request.FormFile("image")
+		errorHandler(err)
+		// get name from request
+		name := request.FormValue("name")
+		// save image to database
+		_ = runQuery("INSERT INTO image (name, image) VALUES (?, ?);", "insert", name, image)
+		// return index.html site
+		http.ServeFile(responseWriter, request, "./view/index.html")
+		return
+	}
 }
 func DownloadImage(responseWriter http.ResponseWriter, request *http.Request) {
 
@@ -124,7 +139,7 @@ func Register(responseWriter http.ResponseWriter, request *http.Request) {
 
 		db := openDB()
 		defer closeDB(db)
-		result, err := db.Query("SELECT Username FROM users WHERE Username = ?", user.Username)
+		result, err := db.Query("SELECT username FROM user WHERE username = ?", user.Username)
 		fmt.Println("result: ", result)
 		errorHandler(err)
 		fmt.Println("Query executed")
@@ -145,7 +160,7 @@ func Register(responseWriter http.ResponseWriter, request *http.Request) {
 			}
 		} else {
 			// GET MAX ID
-			result, err := db.Query("SELECT MAX(idusers) FROM users")
+			result, err := db.Query("SELECT MAX(id) FROM user")
 			errorHandler(err)
 			var maxId int
 			if result != nil {
@@ -156,7 +171,7 @@ func Register(responseWriter http.ResponseWriter, request *http.Request) {
 			}
 			maxId++
 			fmt.Println("result is nil | execute insert")
-			res, err := db.Query("INSERT INTO users (idusers, Username, Password) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			res, err := db.Query("INSERT INTO user (id, username, password) VALUES (?,?,?)",
 				maxId, user.Username, user.Password)
 			fmt.Println(res)
 			errorHandler(err)
@@ -187,7 +202,7 @@ func Login(responseWriter http.ResponseWriter, request *http.Request) {
 
 		db := openDB()
 		defer closeDB(db)
-		result, err := db.Query("SELECT * FROM users WHERE Username = ? AND Password = ?", user.Username, user.Password)
+		result, err := db.Query("SELECT * FROM user WHERE username = ? AND password = ?", user.Username, user.Password)
 		errorHandler(err)
 		var users []model.User
 		if result != nil {
@@ -197,19 +212,19 @@ func Login(responseWriter http.ResponseWriter, request *http.Request) {
 				errorHandler(err)
 				users = append(users, user)
 			}
+			// redirect to index page
+			http.ServeFile(responseWriter, request, "./view/index.html")
+			return
+		} else {
+			// return error
+			js, err := json.Marshal("false")
+			errorHandler(err)
+			_, responseErr := responseWriter.Write(js)
+			errorHandler(responseErr)
+			// redirect to login page
+			http.Redirect(responseWriter, request, "/login", http.StatusSeeOther)
+			return
 		}
-		for _, iUser := range users {
-			fmt.Println(user.Username + " " + user.Password)
-			fmt.Println(iUser.Username + " " + iUser.Password)
-			if iUser.Username == user.Username && iUser.Password == user.Password {
-				js, err := json.Marshal(iUser)
-				errorHandler(err)
-				_, responseErr := responseWriter.Write(js)
-				errorHandler(responseErr)
-				return
-			}
-		}
-		return
 	default:
 		js, err := json.Marshal("THIS IS A POST REQUEST")
 		errorHandler(err)
@@ -222,13 +237,6 @@ func Login(responseWriter http.ResponseWriter, request *http.Request) {
 func closeDB(db *sql.DB) {
 	err := db.Close()
 	errorHandler(err)
-}
-func HelloWorld(w http.ResponseWriter, r *http.Request) {
-	// return hello world
-	js, err := json.Marshal("Hello World")
-	errorHandler(err)
-	_, responseErr := w.Write(js)
-	errorHandler(responseErr)
 }
 func openDB() *sql.DB {
 	fmt.Println("Opening DB")

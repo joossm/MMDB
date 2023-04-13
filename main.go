@@ -13,6 +13,7 @@ func main() {
 	serveMux.HandleFunc("/initDatabase", handler.InitDatabase)
 	serveMux.HandleFunc("/register", handler.Register)
 	serveMux.HandleFunc("/login", handler.Login)
+	serveMux.HandleFunc("/upload", handler.UploadImage)
 	serveMux.HandleFunc("/", handler.Index)
 	handler := cors.Default().Handler(serveMux)
 	server := &http.Server{
